@@ -16,11 +16,34 @@ https://github.com/user-attachments/assets/f44773e4-9bf8-4bb5-a9c0-d5938030701c
 
 ### 2. Set Your API Key
 
+You have two options to set your NVIDIA NIM API key:
+
+**Option A: `auth.json`**
+
+Add this to `~/.pi/agent/auth.json`:
+
+```json
+{
+  "nvidia-nim": {
+    "type": "api_key",
+    "key": "nvapi-your-key-here"
+  }
+}
+```
+
+**Option B: Environment variable**
+
 ```bash
 export NVIDIA_NIM_API_KEY=nvapi-your-key-here
 ```
 
 Add this to your `~/.bashrc`, `~/.zshrc`, or shell profile to persist it.
+
+**Credential resolution order:**
+
+1. `--api-key` CLI flag (highest priority)
+2. `auth.json` entry for `nvidia-nim`
+3. `NVIDIA_NIM_API_KEY` environment variable (lowest priority)
 
 ### 3. Install the Extension
 
