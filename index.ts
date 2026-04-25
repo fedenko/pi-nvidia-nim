@@ -6,7 +6,9 @@
  *
  * Setup:
  *   1. Get an API key from https://build.nvidia.com
- *   2. Export it: export NVIDIA_NIM_API_KEY=nvapi-...
+ *   2. Set your API key (one of):
+ *      - Add to ~/.pi/agent/auth.json: {"nvidia-nim": {"type": "api_key", "key": "nvapi-..."}}
+ *      - Set NVIDIA_NIM_API_KEY environment variable
  *   3. Load the extension:
  *      pi -e ./path/to/pi-nvidia-nim
  *      # or install as a package:
@@ -481,21 +483,21 @@ function nimStreamSimple(
 		effectiveReasoning = undefined;
 	}
 
-	// Resolve API key at request time - must pass via options.apiKey because
-	// pi-ai's getEnvApiKey() doesn't know about custom providers like "nvidia-nim"
-	const nimApiKey = process.env["NVIDIA_NIM_API_KEY"];
-	if (!nimApiKey) {
+	// Resolve API key from options (pi's credential resolution: CLI flag > auth.json > env var).
+	// Reject the literal env-var name: pi's resolveConfigValue() returns it as a fallback when
+	// NVIDIA_NIM_API_KEY is unset, producing a truthy-but-invalid value that causes a 401.
+	const nimApiKey = options?.apiKey;
+	if (!nimApiKey || nimApiKey === NVIDIA_NIM_API_KEY_ENV) {
 		throw new Error(
-			`NVIDIA NIM: NVIDIA_NIM_API_KEY environment variable is not set. ` +
-			`Get a free API key at https://build.nvidia.com and export it: ` +
-			`export NVIDIA_NIM_API_KEY=nvapi-...`
+			`NVIDIA NIM: No API key found. ` +
+			`Add to ~/.pi/agent/auth.json: {"nvidia-nim": {"type": "api_key", "key": "nvapi-..."}}, ` +
+			`or set NVIDIA_NIM_API_KEY environment variable.`
 		);
 	}
 
 	const modifiedOptions: SimpleStreamOptions = {
 		...options,
 		reasoning: effectiveReasoning,
-		apiKey: nimApiKey,
 		onPayload: (params: unknown) => {
 			const p = params as Record<string, unknown>;
 
@@ -652,14 +654,17 @@ export default function (pi: ExtensionAPI) {
 		baseUrl: NVIDIA_NIM_BASE_URL,
 		apiKey: NVIDIA_NIM_API_KEY_ENV,
 		api: "openai-completions",
-		authHeader: true,
 		models: curatedModels,
 		streamSimple: nimStreamSimple,
 	});
 
 	// On session start, discover additional models from the API
 	pi.on("session_start", async (_event: any, ctx: any) => {
-		const apiKey = process.env[NVIDIA_NIM_API_KEY_ENV];
+		// Resolve via pi's full credential chain: CLI flag > auth.json > env var > fallback.
+		// Reject the literal env-var name that pi's resolveConfigValue() returns as a fallback
+		// when NVIDIA_NIM_API_KEY is unset (truthy but invalid → would cause silent 401).
+		const rawKey = await ctx.modelRegistry.getApiKeyForProvider(PROVIDER_NAME);
+		const apiKey = rawKey && rawKey !== NVIDIA_NIM_API_KEY_ENV ? rawKey : undefined;
 		if (!apiKey) return; // API key not available, skip model discovery
 
 		// Fetch live model list
@@ -686,7 +691,6 @@ export default function (pi: ExtensionAPI) {
 				baseUrl: NVIDIA_NIM_BASE_URL,
 				apiKey: NVIDIA_NIM_API_KEY_ENV,
 				api: "openai-completions",
-				authHeader: true,
 				models: allModels,
 				streamSimple: nimStreamSimple,
 			});
