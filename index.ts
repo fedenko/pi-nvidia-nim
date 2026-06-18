@@ -51,6 +51,9 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
 const NVIDIA_NIM_BASE_URL = "https://integrate.api.nvidia.com/v1";
 const NVIDIA_NIM_API_KEY_ENV = "NVIDIA_NIM_API_KEY";
+// Env var reference passed to registerProvider. The "$" prefix tells pi to
+// resolve it as an environment variable (the bare name is a deprecated legacy form).
+const NVIDIA_NIM_API_KEY_REF = `$${NVIDIA_NIM_API_KEY_ENV}`;
 const PROVIDER_NAME = "nvidia-nim";
 
 // =============================================================================
@@ -652,7 +655,7 @@ export default function (pi: ExtensionAPI) {
 
 	pi.registerProvider(PROVIDER_NAME, {
 		baseUrl: NVIDIA_NIM_BASE_URL,
-		apiKey: NVIDIA_NIM_API_KEY_ENV,
+		apiKey: NVIDIA_NIM_API_KEY_REF,
 		api: "openai-completions",
 		models: curatedModels,
 		streamSimple: nimStreamSimple,
@@ -689,7 +692,7 @@ export default function (pi: ExtensionAPI) {
 			const allModels = Array.from(modelMap.values());
 			ctx.modelRegistry.registerProvider(PROVIDER_NAME, {
 				baseUrl: NVIDIA_NIM_BASE_URL,
-				apiKey: NVIDIA_NIM_API_KEY_ENV,
+				apiKey: NVIDIA_NIM_API_KEY_REF,
 				api: "openai-completions",
 				models: allModels,
 				streamSimple: nimStreamSimple,
