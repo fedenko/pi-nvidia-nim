@@ -84,6 +84,14 @@ const THINKING_CONFIGS: Record<string, ThinkingConfig> = {
 		enableKwargs: { thinking: true },
 		disableKwargs: { thinking: false },
 	},
+	"deepseek-ai/deepseek-v4-pro": {
+		enableKwargs: { thinking: true },
+		disableKwargs: { thinking: false },
+	},
+	"deepseek-ai/deepseek-v4-flash": {
+		enableKwargs: { thinking: true },
+		disableKwargs: { thinking: false },
+	},
 	"deepseek-ai/deepseek-v3.1-terminus": {
 		enableKwargs: { thinking: true },
 		disableKwargs: { thinking: false },
@@ -113,6 +121,10 @@ const THINKING_CONFIGS: Record<string, ThinkingConfig> = {
 		enableKwargs: { enable_thinking: true, clear_thinking: false },
 		disableKwargs: { enable_thinking: false },
 	},
+	"z-ai/glm-5.1": {
+		enableKwargs: { enable_thinking: true, clear_thinking: false },
+		disableKwargs: { enable_thinking: false },
+	},
 	// Kimi models: chat_template_kwargs works, reasoning_effort also works
 	"moonshotai/kimi-k2.5": {
 		enableKwargs: { thinking: true },
@@ -120,6 +132,11 @@ const THINKING_CONFIGS: Record<string, ThinkingConfig> = {
 		sendReasoningEffort: true,
 	},
 	"moonshotai/kimi-k2-thinking": {
+		enableKwargs: { thinking: true },
+		disableKwargs: { thinking: false },
+		sendReasoningEffort: true,
+	},
+	"moonshotai/kimi-k2.6": {
 		enableKwargs: { thinking: true },
 		disableKwargs: { thinking: false },
 		sendReasoningEffort: true,
@@ -134,6 +151,14 @@ const THINKING_CONFIGS: Record<string, ThinkingConfig> = {
 		disableKwargs: { enable_thinking: false },
 	},
 	"qwen/qwen3-next-80b-a3b-thinking": {
+		enableKwargs: { enable_thinking: true },
+		disableKwargs: { enable_thinking: false },
+	},
+	"qwen/qwen3.5-122b-a10b": {
+		enableKwargs: { enable_thinking: true },
+		disableKwargs: { enable_thinking: false },
+	},
+	"qwen/qwen3.5-397b-a17b": {
 		enableKwargs: { enable_thinking: true },
 		disableKwargs: { enable_thinking: false },
 	},
@@ -238,6 +263,8 @@ const CONTEXT_WINDOWS: Record<string, number> = {
 	"deepseek-ai/deepseek-v3.1": 131072,
 	"deepseek-ai/deepseek-v3.1-terminus": 131072,
 	"deepseek-ai/deepseek-v3.2": 131072,
+	"deepseek-ai/deepseek-v4-pro": 131072,
+	"deepseek-ai/deepseek-v4-flash": 131072,
 	"deepseek-ai/deepseek-r1-distill-llama-8b": 131072,
 	"deepseek-ai/deepseek-r1-distill-qwen-14b": 131072,
 	"deepseek-ai/deepseek-r1-distill-qwen-32b": 131072,
@@ -248,10 +275,12 @@ const CONTEXT_WINDOWS: Record<string, number> = {
 	"moonshotai/kimi-k2-instruct-0905": 131072,
 	"moonshotai/kimi-k2-thinking": 131072,
 	"moonshotai/kimi-k2.5": 262144,
+	"moonshotai/kimi-k2.6": 262144,
 	// MiniMax
 	"minimaxai/minimax-m2": 1048576,
 	"minimaxai/minimax-m2.1": 1048576,
 	"minimaxai/minimax-m2.7": 204800,
+	"minimaxai/minimax-m3": 204800,
 	// Meta Llama
 	"meta/llama-3.1-405b-instruct": 131072,
 	"meta/llama-3.1-70b-instruct": 131072,
@@ -301,6 +330,8 @@ const CONTEXT_WINDOWS: Record<string, number> = {
 	"qwen/qwen3-235b-a22b": 131072,
 	"qwen/qwen3-coder-480b-a35b-instruct": 262144,
 	"qwen/qwen3-next-80b-a3b-instruct": 131072,
+	"qwen/qwen3.5-122b-a10b": 131072,
+	"qwen/qwen3.5-397b-a17b": 131072,
 	"qwen/qwen3-next-80b-a3b-thinking": 131072,
 	"qwen/qwq-32b": 131072,
 	// Google Gemma
@@ -328,6 +359,7 @@ const CONTEXT_WINDOWS: Record<string, number> = {
 	// Z-AI / GLM
 	"z-ai/glm4.7": 131072,
 	"z-ai/glm5": 131072,
+	"z-ai/glm-5.1": 131072,
 	// StepFun
 	"stepfun-ai/step-3.5-flash": 131072,
 	// ByteDance
@@ -371,17 +403,24 @@ const MAX_TOKENS: Record<string, number> = {
 	"deepseek-ai/deepseek-v3.1": 16384,
 	"deepseek-ai/deepseek-v3.1-terminus": 16384,
 	"deepseek-ai/deepseek-v3.2": 16384,
+	"deepseek-ai/deepseek-v4-pro": 16384,
+	"deepseek-ai/deepseek-v4-flash": 16384,
 	"moonshotai/kimi-k2.5": 16384,
+	"moonshotai/kimi-k2.6": 16384,
 	"moonshotai/kimi-k2-instruct": 8192,
 	"moonshotai/kimi-k2-thinking": 16384,
 	"minimaxai/minimax-m2": 8192,
 	"minimaxai/minimax-m2.1": 8192,
 	"minimaxai/minimax-m2.7": 8192,
+	"minimaxai/minimax-m3": 8192,
 	"meta/llama-4-maverick-17b-128e-instruct": 16384,
 	"meta/llama-4-scout-17b-16e-instruct": 16384,
 	"z-ai/glm4.7": 16384,
 	"z-ai/glm5": 16384,
+	"z-ai/glm-5.1": 16384,
 	"qwen/qwen3-coder-480b-a35b-instruct": 65536,
+	"qwen/qwen3.5-122b-a10b": 16384,
+	"qwen/qwen3.5-397b-a17b": 16384,
 	"nvidia/llama-3.1-nemotron-ultra-253b-v1": 32768,
 	"openai/gpt-oss-120b": 16384,
 	"openai/gpt-oss-20b": 16384,
@@ -395,53 +434,36 @@ const MAX_TOKENS: Record<string, number> = {
 
 const FEATURED_MODELS = [
 	// Flagship / frontier
-	"deepseek-ai/deepseek-v3.2",
-	"deepseek-ai/deepseek-v3.1",
-	"deepseek-ai/deepseek-v3.1-terminus",
-	"moonshotai/kimi-k2.5",
-	"moonshotai/kimi-k2-thinking",
-	"moonshotai/kimi-k2-instruct",
-	"moonshotai/kimi-k2-instruct-0905",
-	"minimaxai/minimax-m2.1",
-	"minimaxai/minimax-m2",
+	"deepseek-ai/deepseek-v4-pro",
+	"deepseek-ai/deepseek-v4-flash",
+	"moonshotai/kimi-k2.6",
+	"minimaxai/minimax-m3",
 	"minimaxai/minimax-m2.7",
-	"z-ai/glm5",
-	"z-ai/glm4.7",
+	"z-ai/glm-5.1",
 	"openai/gpt-oss-120b",
 	"openai/gpt-oss-20b",
 	"stepfun-ai/step-3.5-flash",
 	"bytedance/seed-oss-36b-instruct",
 	// Qwen
-	"qwen/qwen3-coder-480b-a35b-instruct",
-	"qwen/qwen3-235b-a22b",
 	"qwen/qwen3-next-80b-a3b-instruct",
-	"qwen/qwen3-next-80b-a3b-thinking",
-	"qwen/qwq-32b",
-	"qwen/qwen2.5-coder-32b-instruct",
+	"qwen/qwen3.5-397b-a17b",
+	"qwen/qwen3.5-122b-a10b",
 	// Meta Llama
 	"meta/llama-4-maverick-17b-128e-instruct",
-	"meta/llama-4-scout-17b-16e-instruct",
 	"meta/llama-3.3-70b-instruct",
-	"meta/llama-3.1-405b-instruct",
 	"meta/llama-3.2-90b-vision-instruct",
 	// Mistral
 	"mistralai/mistral-large-3-675b-instruct-2512",
-	"mistralai/mistral-medium-3-instruct",
-	"mistralai/devstral-2-123b-instruct-2512",
-	"mistralai/magistral-small-2506",
+	"mistralai/mistral-medium-3.5-128b",
+	"mistralai/mistral-small-4-119b-2603",
 	"mistralai/mistral-nemotron",
 	// NVIDIA
 	"nvidia/llama-3.1-nemotron-ultra-253b-v1",
 	"nvidia/llama-3.3-nemotron-super-49b-v1.5",
-	"nvidia/llama-3.3-nemotron-super-49b-v1",
-	// DeepSeek R1 distilled
-	"deepseek-ai/deepseek-r1-distill-qwen-32b",
-	"deepseek-ai/deepseek-r1-distill-qwen-14b",
+	"nvidia/llama-3.1-nemotron-70b-instruct",
 	// Microsoft Phi
-	"microsoft/phi-4-mini-flash-reasoning",
+	"microsoft/phi-4-multimodal-instruct",
 	"microsoft/phi-4-mini-instruct",
-	// IBM
-	"ibm/granite-3.3-8b-instruct",
 ];
 
 // =============================================================================
@@ -671,21 +693,41 @@ export default function (pi: ExtensionAPI) {
 		const liveModelIds = await fetchNimModels(apiKey);
 		if (liveModelIds.length === 0) return;
 
-		let newModelsAdded = 0;
-		for (const id of liveModelIds) {
-			if (modelMap.has(id)) continue;
-			const entry = buildModelEntry(id);
-			if (entry) {
-				modelMap.set(id, entry);
-				newModelsAdded++;
-			}
+		// Reconcile the curated list against what NIM actually serves. The featured
+		// list drifts over time (models get renamed/removed), so any curated ID that
+		// is no longer live must be pruned — otherwise selecting it yields a 404/410,
+		// which pi masks as "Cannot continue from message role: assistant".
+		const liveSet = new Set(liveModelIds);
+		const reconciled = new Map<string, NimModelEntry>();
+
+		// Preserve featured ordering for featured models that are still live.
+		for (const id of FEATURED_MODELS) {
+			if (!liveSet.has(id)) continue;
+			const entry = modelMap.get(id) ?? buildModelEntry(id);
+			if (entry) reconciled.set(id, entry);
 		}
 
-		// Re-register with full model list if we found new ones.
+		// Add all remaining live models (non-featured), skipping SKIP_MODELS via buildModelEntry.
+		for (const id of liveModelIds) {
+			if (reconciled.has(id)) continue;
+			const entry = modelMap.get(id) ?? buildModelEntry(id);
+			if (entry) reconciled.set(id, entry);
+		}
+
+		// Detect whether the reconciled list differs from what we last registered.
+		const changed =
+			reconciled.size !== modelMap.size ||
+			![...reconciled.keys()].every((id) => modelMap.has(id));
+
+		// Swap in the reconciled list as the new source of truth.
+		modelMap.clear();
+		for (const [id, entry] of reconciled) modelMap.set(id, entry);
+
+		// Re-register with the reconciled model list if it changed.
 		// NOTE: must use ctx.modelRegistry.registerProvider() here, not pi.registerProvider().
 		// pi.registerProvider() only queues registrations for the initial extension load.
 		// From event handlers/commands, we need to call the registry directly.
-		if (newModelsAdded > 0) {
+		if (changed) {
 			const allModels = Array.from(modelMap.values());
 			ctx.modelRegistry.registerProvider(PROVIDER_NAME, {
 				baseUrl: NVIDIA_NIM_BASE_URL,
