@@ -34,17 +34,16 @@
  * thinking settings.
  */
 
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import type {
 	Api,
 	AssistantMessageEventStream,
 	Context,
 	Model,
 	SimpleStreamOptions,
+	ThinkingLevelMap,
 } from "@earendil-works/pi-ai";
-import { streamSimpleOpenAICompletions } from "@earendil-works/pi-ai";
-import { getAgentDir, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { streamSimpleOpenAICompletions } from "@earendil-works/pi-ai/compat";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 // =============================================================================
 // Constants
@@ -55,6 +54,7 @@ const NVIDIA_NIM_API_KEY_ENV = "NVIDIA_NIM_API_KEY";
 const NVIDIA_API_KEY_ENV = "NVIDIA_API_KEY";
 const NVIDIA_API_KEY_ENV_NAMES = [NVIDIA_NIM_API_KEY_ENV, NVIDIA_API_KEY_ENV] as const;
 const PROVIDER_NAME = "nvidia-nim";
+const INKLING_MODEL_ID = "thinkingmachines/inkling";
 
 // =============================================================================
 // Per-model thinking configuration
@@ -185,7 +185,7 @@ const THINKING_CONFIGS: Record<string, ThinkingConfig> = {
 // Reasoning models and their capabilities
 // =============================================================================
 
-const REASONING_MODELS = new Set(Object.keys(THINKING_CONFIGS));
+const REASONING_MODELS = new Set([...Object.keys(THINKING_CONFIGS), INKLING_MODEL_ID]);
 
 // Models known to support image/vision input
 const VISION_MODELS = new Set([
@@ -197,6 +197,7 @@ const VISION_MODELS = new Set([
 	"nvidia/llama-3.1-nemotron-nano-vl-8b-v1",
 	"nvidia/nemotron-nano-12b-v2-vl",
 	"nvidia/cosmos-reason2-8b",
+	INKLING_MODEL_ID,
 ]);
 
 // Embedding / non-chat models to skip
@@ -339,6 +340,8 @@ const CONTEXT_WINDOWS: Record<string, number> = {
 	"nvidia/llama-3.3-nemotron-super-49b-v1.5": 131072,
 	"nvidia/nemotron-4-340b-instruct": 4096,
 	"nvidia/nvidia-nemotron-nano-9b-v2": 131072,
+	// Thinking Machines
+	[INKLING_MODEL_ID]: 1_048_576,
 	// OpenAI open-source
 	"openai/gpt-oss-120b": 131072,
 	"openai/gpt-oss-20b": 131072,
@@ -406,6 +409,7 @@ const MAX_TOKENS: Record<string, number> = {
 	"openai/gpt-oss-20b": 16384,
 	"mistralai/mistral-large-3-675b-instruct-2512": 16384,
 	"mistralai/devstral-2-123b-instruct-2512": 32768,
+	[INKLING_MODEL_ID]: 16_384,
 };
 
 // =============================================================================
@@ -432,6 +436,7 @@ const FEATURED_MODELS = [
 	"openai/gpt-oss-20b",
 	"stepfun-ai/step-3.5-flash",
 	"bytedance/seed-oss-36b-instruct",
+	INKLING_MODEL_ID,
 	// Qwen
 	"qwen/qwen3-coder-480b-a35b-instruct",
 	"qwen/qwen3-235b-a22b",
@@ -479,14 +484,6 @@ const FEATURED_MODELS = [
  * 4. Uses onPayload callback to mutate request params before they're sent
  */
 type NimApiKeyEnvName = (typeof NVIDIA_API_KEY_ENV_NAMES)[number];
-type AuthStorageLike = {
-	get?: (provider: string) => unknown;
-};
-
-interface NimApiKeyCredential {
-	type: "api_key";
-	key: string;
-}
 
 function getNimApiKeyEnv(): NimApiKeyEnvName | undefined {
 	return NVIDIA_API_KEY_ENV_NAMES.find((envName) => !!process.env[envName]);
@@ -521,57 +518,6 @@ function resolveNimApiKeyEnvReference(value: string): string | undefined {
 	return envValue || undefined;
 }
 
-function isNimApiKeyEnvValue(value: string): boolean {
-	return NVIDIA_API_KEY_ENV_NAMES.some((envName) => process.env[envName]?.trim() === value);
-}
-
-function isNimApiKeyCredential(credential: unknown): credential is NimApiKeyCredential {
-	return (
-		typeof credential === "object" &&
-		credential !== null &&
-		(credential as { type?: unknown }).type === "api_key" &&
-		typeof (credential as { key?: unknown }).key === "string"
-	);
-}
-
-function readStoredNimApiKeyConfig(): string | undefined {
-	try {
-		const authPath = join(getAgentDir(), "auth.json");
-		if (!existsSync(authPath)) return undefined;
-
-		const data = JSON.parse(readFileSync(authPath, "utf-8")) as Record<string, unknown>;
-		const credential = data[PROVIDER_NAME];
-		return isNimApiKeyCredential(credential) ? credential.key : undefined;
-	} catch {
-		return undefined;
-	}
-}
-
-function getStoredNimApiKeyConfig(authStorage?: AuthStorageLike): string | undefined {
-	if (authStorage) {
-		try {
-			const credential = authStorage.get?.(PROVIDER_NAME);
-			return isNimApiKeyCredential(credential) ? credential.key : undefined;
-		} catch {
-			return undefined;
-		}
-	}
-
-	return readStoredNimApiKeyConfig();
-}
-
-function hasStoredNimCommandCredential(authStorage?: AuthStorageLike): boolean {
-	return getStoredNimApiKeyConfig(authStorage)?.startsWith("!") ?? false;
-}
-
-function getStoredResolvedNimApiKey(authStorage?: AuthStorageLike): string | undefined {
-	const configuredApiKey = getStoredNimApiKeyConfig(authStorage)?.trim();
-	if (!configuredApiKey || configuredApiKey.startsWith("!")) return undefined;
-
-	const envValue = process.env[configuredApiKey]?.trim();
-	return envValue || configuredApiKey;
-}
-
 function normalizeResolvedNimApiKey(apiKey: string | undefined): string | undefined {
 	if (apiKey === undefined) return undefined;
 
@@ -583,23 +529,17 @@ function normalizeResolvedNimApiKey(apiKey: string | undefined): string | undefi
 	return trimmed;
 }
 
-function resolveNimApiKey(apiKey: string | undefined, authStorage?: AuthStorageLike): string | undefined {
+function resolveNimApiKey(apiKey: string | undefined): string | undefined {
 	const resolvedApiKey = normalizeResolvedNimApiKey(apiKey);
-	const hasStoredCommandCredential = hasStoredNimCommandCredential(authStorage);
-
-	if (
-		hasStoredCommandCredential &&
-		(!resolvedApiKey || isNimApiKeyEnvPlaceholder(resolvedApiKey) || isNimApiKeyEnvValue(resolvedApiKey))
-	) {
-		throw new Error("NVIDIA NIM API key command resolved to an empty value.");
-	}
-
-	const storedApiKey = getStoredResolvedNimApiKey(authStorage);
-	if (storedApiKey && (!resolvedApiKey || isNimApiKeyEnvPlaceholder(resolvedApiKey))) return storedApiKey;
 
 	if (resolvedApiKey) {
 		const envReferenceApiKey = resolveNimApiKeyEnvReference(resolvedApiKey);
 		if (envReferenceApiKey) return envReferenceApiKey;
+
+		if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(resolvedApiKey) && Object.hasOwn(process.env, resolvedApiKey)) {
+			return normalizeResolvedNimApiKey(process.env[resolvedApiKey]);
+		}
+
 		if (!isNimApiKeyEnvPlaceholder(resolvedApiKey)) return resolvedApiKey;
 	}
 
@@ -642,7 +582,7 @@ function buildNimRequestHeaders(headers: SimpleStreamOptions["headers"], apiKey:
 	const resolvedHeaders: Record<string, string> = {};
 
 	for (const [key, value] of Object.entries(headers ?? {})) {
-		if (key.toLowerCase() === "authorization") continue;
+		if (key.toLowerCase() === "authorization" || value === null) continue;
 		resolvedHeaders[key] = value;
 	}
 
@@ -669,9 +609,9 @@ function nimStreamSimple(
 	const reasoning = options?.reasoning;
 	const isThinkingEnabled = !!reasoning;
 
-	// Map provider-agnostic pi levels to NIM's accepted top-level values.
-	// Model-specific chat_template_kwargs may apply a different mapping below.
-	const mappedReasoning = mapNimTopLevelReasoning(reasoning);
+	// Custom NIM thinking configs use the provider-wide effort mapping. Models that
+	// declare native chat-template compatibility keep their own named levels.
+	const mappedReasoning = thinkingConfig ? mapNimTopLevelReasoning(reasoning) : reasoning;
 
 	// For models that have a thinking config: we handle thinking via chat_template_kwargs.
 	// Suppress reasoning_effort (set reasoning to undefined) unless the model explicitly
@@ -743,6 +683,7 @@ interface NimModelEntry {
 	id: string;
 	name: string;
 	reasoning: boolean;
+	thinkingLevelMap?: ThinkingLevelMap;
 	input: ("text" | "image")[];
 	contextWindow: number;
 	maxTokens: number;
@@ -788,6 +729,17 @@ function buildModelEntry(modelId: string): NimModelEntry | null {
 		maxTokensField: "max_tokens",
 	};
 
+	// Inkling conditions reasoning through its chat template rather than a top-level
+	// reasoning_effort field. NVIDIA NIM accepts the same named effort presets as
+	// Inkling's tokenizer; map pi's extended levels to Inkling's 0.99 preset.
+	if (modelId === INKLING_MODEL_ID) {
+		entry.thinkingLevelMap = { off: "none", xhigh: "max", max: "max" };
+		entry.compat.thinkingFormat = "chat-template";
+		entry.compat.chatTemplateKwargs = {
+			reasoning_effort: { $var: "thinking.effort" },
+		};
+	}
+
 	// Mistral models on NIM need extra compat flags
 	if (modelId.startsWith("mistralai/")) {
 		entry.compat.requiresToolResultName = true;
@@ -819,14 +771,17 @@ function sanitizeNimLogMessage(message: string): string {
 	return message.replace(/nvapi-[A-Za-z0-9._-]+/g, "nvapi-[REDACTED]");
 }
 
-function notifyNimDiscoveryCredentialWarning(ctx: any): void {
-	ctx?.ui?.notify?.(NIM_DISCOVERY_CREDENTIAL_WARNING, "warning");
+function notifyNimDiscoveryCredentialWarning(ctx: ExtensionContext): void {
+	ctx.ui.notify(NIM_DISCOVERY_CREDENTIAL_WARNING, "warning");
 }
 
-async function resolveNimDiscoveryApiKey(ctx: any): Promise<string | undefined> {
+async function resolveNimDiscoveryApiKey(ctx: ExtensionContext): Promise<string | undefined> {
 	try {
-		const apiKey = await ctx?.modelRegistry?.getApiKeyForProvider?.(PROVIDER_NAME);
-		return resolveNimApiKey(apiKey, ctx?.modelRegistry?.authStorage);
+		const apiKey = await ctx.modelRegistry.getApiKeyForProvider(PROVIDER_NAME);
+		if (apiKey === undefined && ctx.modelRegistry.getProviderAuthStatus(PROVIDER_NAME).configured) {
+			throw new Error("NVIDIA NIM configured credential resolved to an empty value.");
+		}
+		return resolveNimApiKey(apiKey);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
 		console.warn(`pi-nvidia-nim: ${sanitizeNimLogMessage(message)}`);
@@ -901,7 +856,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// On session start, discover additional models from the API
-	pi.on("session_start", async (_event: any, ctx: any) => {
+	pi.on("session_start", async (_event, ctx) => {
 		const apiKey = await resolveNimDiscoveryApiKey(ctx);
 		if (!apiKey) return;
 
@@ -927,13 +882,10 @@ export default function (pi: ExtensionAPI) {
 			}
 		}
 
-		// Re-register with full model list if we found new ones.
-		// NOTE: must use ctx.modelRegistry.registerProvider() here, not pi.registerProvider().
-		// pi.registerProvider() only queues registrations for the initial extension load.
-		// From event handlers/commands, we need to call the registry directly.
+		// Runtime provider registrations now apply immediately through the extension API.
 		if (newModelsAdded > 0) {
 			const allModels = Array.from(modelMap.values());
-			ctx.modelRegistry.registerProvider(PROVIDER_NAME, {
+			pi.registerProvider(PROVIDER_NAME, {
 				baseUrl: NVIDIA_NIM_BASE_URL,
 				apiKey: getNimProviderApiKeyConfig(),
 				api: "openai-completions",
