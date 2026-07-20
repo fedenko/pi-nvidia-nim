@@ -55,6 +55,7 @@ const NVIDIA_API_KEY_ENV = "NVIDIA_API_KEY";
 const NVIDIA_API_KEY_ENV_NAMES = [NVIDIA_NIM_API_KEY_ENV, NVIDIA_API_KEY_ENV] as const;
 const PROVIDER_NAME = "nvidia-nim";
 const INKLING_MODEL_ID = "thinkingmachines/inkling";
+const MINIMAX_M3_MODEL_ID = "minimaxai/minimax-m3";
 
 // =============================================================================
 // Per-model thinking configuration
@@ -185,7 +186,11 @@ const THINKING_CONFIGS: Record<string, ThinkingConfig> = {
 // Reasoning models and their capabilities
 // =============================================================================
 
-const REASONING_MODELS = new Set([...Object.keys(THINKING_CONFIGS), INKLING_MODEL_ID]);
+const REASONING_MODELS = new Set([
+	...Object.keys(THINKING_CONFIGS),
+	INKLING_MODEL_ID,
+	MINIMAX_M3_MODEL_ID,
+]);
 
 // Models known to support image/vision input
 const VISION_MODELS = new Set([
@@ -198,6 +203,7 @@ const VISION_MODELS = new Set([
 	"nvidia/nemotron-nano-12b-v2-vl",
 	"nvidia/cosmos-reason2-8b",
 	INKLING_MODEL_ID,
+	MINIMAX_M3_MODEL_ID,
 ]);
 
 // Embedding / non-chat models to skip
@@ -270,6 +276,7 @@ const CONTEXT_WINDOWS: Record<string, number> = {
 	"minimaxai/minimax-m2": 1048576,
 	"minimaxai/minimax-m2.1": 1048576,
 	"minimaxai/minimax-m2.7": 204800,
+	[MINIMAX_M3_MODEL_ID]: 1_048_576,
 	// Meta Llama
 	"meta/llama-3.1-405b-instruct": 131072,
 	"meta/llama-3.1-70b-instruct": 131072,
@@ -399,6 +406,7 @@ const MAX_TOKENS: Record<string, number> = {
 	"minimaxai/minimax-m2": 8192,
 	"minimaxai/minimax-m2.1": 8192,
 	"minimaxai/minimax-m2.7": 8192,
+	[MINIMAX_M3_MODEL_ID]: 16_384,
 	"meta/llama-4-maverick-17b-128e-instruct": 16384,
 	"meta/llama-4-scout-17b-16e-instruct": 16384,
 	"z-ai/glm4.7": 16384,
@@ -427,6 +435,7 @@ const FEATURED_MODELS = [
 	"moonshotai/kimi-k2-thinking",
 	"moonshotai/kimi-k2-instruct",
 	"moonshotai/kimi-k2-instruct-0905",
+	MINIMAX_M3_MODEL_ID,
 	"minimaxai/minimax-m2.1",
 	"minimaxai/minimax-m2",
 	"minimaxai/minimax-m2.7",
@@ -737,6 +746,24 @@ function buildModelEntry(modelId: string): NimModelEntry | null {
 		entry.compat.thinkingFormat = "chat-template";
 		entry.compat.chatTemplateKwargs = {
 			reasoning_effort: { $var: "thinking.effort" },
+		};
+	}
+
+	// MiniMax M3 exposes discrete disabled/adaptive/enabled reasoning modes through
+	// chat_template_kwargs.thinking_mode. Map pi's effort scale to the closest mode.
+	if (modelId === MINIMAX_M3_MODEL_ID) {
+		entry.thinkingLevelMap = {
+			off: "disabled",
+			minimal: "adaptive",
+			low: "adaptive",
+			medium: "adaptive",
+			high: "enabled",
+			xhigh: "enabled",
+			max: "enabled",
+		};
+		entry.compat.thinkingFormat = "chat-template";
+		entry.compat.chatTemplateKwargs = {
+			thinking_mode: { $var: "thinking.effort" },
 		};
 	}
 
