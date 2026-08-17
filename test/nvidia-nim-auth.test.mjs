@@ -95,7 +95,7 @@ test("loads through the current pi extension loader", async (t) => {
 		({ name }) => name === "nvidia-nim",
 	);
 	assert.equal(registration?.config.api, "openai-completions");
-	assert.equal(registration?.config.models?.length, 44);
+	assert.equal(registration?.config.models?.length, 21);
 	const inkling = registration?.config.models?.find(({ id }) => id === "thinkingmachines/inkling");
 	assert.deepEqual(
 		inkling && {
@@ -234,7 +234,7 @@ test("registers MiniMax M3 with native reasoning modes and a usable output budge
 				max: "enabled",
 			},
 			input: ["text", "image"],
-			contextWindow: 1_048_576,
+			contextWindow: 262_144,
 			maxTokens: 16_384,
 			thinkingFormat: "chat-template",
 			chatTemplateKwargs: {
@@ -319,8 +319,8 @@ test("uses auth.json literal identifier-shaped NVIDIA NIM credentials for provid
 
 	assert.ok(providerConfig?.streamSimple, "extension should register a custom streamSimple");
 
-	const model = modelRegistry.find("nvidia-nim", "deepseek-ai/deepseek-v3.2");
-	assert.ok(model, "expected deepseek-ai/deepseek-v3.2 to be registered");
+	const model = modelRegistry.find("nvidia-nim", "openai/gpt-oss-120b");
+	assert.ok(model, "expected openai/gpt-oss-120b to be registered");
 
 	const apiKey = await getModelRequestApiKey(modelRegistry, model);
 	assert.equal(apiKey, "ABC123");
@@ -398,8 +398,8 @@ test("uses auth.json env-derived identifier-shaped NVIDIA NIM credentials for pr
 		on() {},
 	});
 
-	const model = modelRegistry.find("nvidia-nim", "deepseek-ai/deepseek-v3.2");
-	assert.ok(model, "expected deepseek-ai/deepseek-v3.2 to be registered");
+	const model = modelRegistry.find("nvidia-nim", "openai/gpt-oss-120b");
+	assert.ok(model, "expected openai/gpt-oss-120b to be registered");
 
 	const apiKey = await getModelRequestApiKey(modelRegistry, model);
 	assert.equal(apiKey, "MY_NIM_KEY");
@@ -480,8 +480,8 @@ test("uses the active runtime authPath for identifier-shaped discovery and compl
 
 	assert.ok(sessionStartHandler, "extension should register a session_start handler");
 
-	const model = modelRegistry.find("nvidia-nim", "deepseek-ai/deepseek-v3.2");
-	assert.ok(model, "expected deepseek-ai/deepseek-v3.2 to be registered");
+	const model = modelRegistry.find("nvidia-nim", "openai/gpt-oss-120b");
+	assert.ok(model, "expected openai/gpt-oss-120b to be registered");
 
 	const originalFetch = globalThis.fetch;
 	const requests = [];
@@ -553,8 +553,8 @@ test("uses NVIDIA_NIM_API_KEY env fallback when the resolved request key is stil
 		on() {},
 	});
 
-	const model = modelRegistry.find("nvidia-nim", "deepseek-ai/deepseek-v3.2");
-	assert.ok(model, "expected deepseek-ai/deepseek-v3.2 to be registered");
+	const model = modelRegistry.find("nvidia-nim", "openai/gpt-oss-120b");
+	assert.ok(model, "expected openai/gpt-oss-120b to be registered");
 
 	const apiKey = EXPLICIT_NVIDIA_NIM_API_KEY_REF;
 
@@ -616,8 +616,8 @@ test("rewrites stale Authorization headers after resolving env placeholder reque
 		on() {},
 	});
 
-	const model = modelRegistry.find("nvidia-nim", "deepseek-ai/deepseek-v3.2");
-	assert.ok(model, "expected deepseek-ai/deepseek-v3.2 to be registered");
+	const model = modelRegistry.find("nvidia-nim", "openai/gpt-oss-120b");
+	assert.ok(model, "expected openai/gpt-oss-120b to be registered");
 
 	const originalFetch = globalThis.fetch;
 	const originalEnv = process.env.NVIDIA_NIM_API_KEY;
@@ -691,8 +691,8 @@ test("fails locally when no configured key is available and the resolved request
 		on() {},
 	});
 
-	const model = modelRegistry.find("nvidia-nim", "deepseek-ai/deepseek-v3.2");
-	assert.ok(model, "expected deepseek-ai/deepseek-v3.2 to be registered");
+	const model = modelRegistry.find("nvidia-nim", "openai/gpt-oss-120b");
+	assert.ok(model, "expected openai/gpt-oss-120b to be registered");
 
 	const apiKey = EXPLICIT_NVIDIA_NIM_API_KEY_REF;
 
@@ -750,8 +750,8 @@ test("fails locally when an auth.json shell-command key resolves to an empty val
 		on() {},
 	});
 
-	const model = modelRegistry.find("nvidia-nim", "deepseek-ai/deepseek-v3.2");
-	assert.ok(model, "expected deepseek-ai/deepseek-v3.2 to be registered");
+	const model = modelRegistry.find("nvidia-nim", "openai/gpt-oss-120b");
+	assert.ok(model, "expected openai/gpt-oss-120b to be registered");
 
 	const originalFetch = globalThis.fetch;
 	const originalEnv = process.env.NVIDIA_NIM_API_KEY;
@@ -813,8 +813,8 @@ test("uses identifier-shaped shell-command output credentials for provider reque
 		on() {},
 	});
 
-	const model = modelRegistry.find("nvidia-nim", "deepseek-ai/deepseek-v3.2");
-	assert.ok(model, "expected deepseek-ai/deepseek-v3.2 to be registered");
+	const model = modelRegistry.find("nvidia-nim", "openai/gpt-oss-120b");
+	assert.ok(model, "expected openai/gpt-oss-120b to be registered");
 
 	const apiKey = await getModelRequestApiKey(modelRegistry, model);
 	assert.equal(apiKey, "ABC123");
