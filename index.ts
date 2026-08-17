@@ -189,6 +189,29 @@ const THINKING_CONFIGS: Record<string, ThinkingConfig> = {
 		enableKwargs: { thinking: true },
 		disableKwargs: { thinking: false },
 	},
+	// NVIDIA Nemotron-3 family: think by default; { thinking: false } disables
+	// (verified via live API probe, 2026-08-17)
+	"nvidia/nemotron-3-ultra-550b-a55b": {
+		enableKwargs: { thinking: true },
+		disableKwargs: { thinking: false },
+	},
+	"nvidia/nemotron-3-super-120b-a12b": {
+		enableKwargs: { thinking: true },
+		disableKwargs: { thinking: false },
+	},
+	"nvidia/nemotron-3-nano-omni-30b-a3b-reasoning": {
+		enableKwargs: { thinking: true },
+		disableKwargs: { thinking: false },
+	},
+	"nvidia/nemotron-3.5-lightning-30b-a3b": {
+		enableKwargs: { thinking: true },
+		disableKwargs: { thinking: false },
+	},
+	// GLM 5.2 (Z-AI): same template as GLM-5/4.7 (verified via probe)
+	"z-ai/glm-5.2": {
+		enableKwargs: { enable_thinking: true, clear_thinking: false },
+		disableKwargs: { enable_thinking: false },
+	},
 	// Mistral reasoning
 	"mistralai/magistral-small-2506": {
 		enableKwargs: { enable_thinking: true },
@@ -204,6 +227,8 @@ const REASONING_MODELS = new Set([
 	...Object.keys(THINKING_CONFIGS),
 	INKLING_MODEL_ID,
 	MINIMAX_M3_MODEL_ID,
+	// Always produces reasoning output; ignores thinking chat_template_kwargs (probed).
+	"stepfun-ai/step-3.7-flash",
 ]);
 
 // Models known to support image/vision input
@@ -216,6 +241,7 @@ const VISION_MODELS = new Set([
 	"nvidia/llama-3.1-nemotron-nano-vl-8b-v1",
 	"nvidia/nemotron-nano-12b-v2-vl",
 	"nvidia/cosmos-reason2-8b",
+	"nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
 	INKLING_MODEL_ID,
 	MINIMAX_M3_MODEL_ID,
 ]);
@@ -249,6 +275,7 @@ const SKIP_MODELS = new Set([
 	"meta/llama-guard-4-12b",
 	"nvidia/riva-translate-4b-instruct",
 	"nvidia/riva-translate-4b-instruct-v1.1",
+	"nvidia/riva-translate-4b-instruct-v2",
 	"google/deplot",
 	"google/paligemma",
 	"google/recurrentgemma-2b",
@@ -266,6 +293,12 @@ const SKIP_MODELS = new Set([
 	"google/gemma-7b",
 	"google/codegemma-7b",
 	"meta/llama2-70b",
+	// Non-chat NIM endpoints added 2026-08
+	"nvidia/nemotron-3-embed-1b",
+	"nvidia/ai-synthetic-video-detector",
+	"nvidia/ising-calibration-1.5-31b",
+	"nvidia/nemotron-3.5-content-safety",
+	"google/diffusiongemma-26b-a4b-it",
 ]);
 
 // Known context windows (tokens)
@@ -290,7 +323,7 @@ const CONTEXT_WINDOWS: Record<string, number> = {
 	"minimaxai/minimax-m2": 1048576,
 	"minimaxai/minimax-m2.1": 1048576,
 	"minimaxai/minimax-m2.7": 204800,
-	[MINIMAX_M3_MODEL_ID]: 1_048_576,
+	[MINIMAX_M3_MODEL_ID]: 262_144, // measured via API error, 2026-08-17
 	// Meta Llama
 	"meta/llama-3.1-405b-instruct": 131072,
 	"meta/llama-3.1-70b-instruct": 131072,
@@ -355,6 +388,7 @@ const CONTEXT_WINDOWS: Record<string, number> = {
 	"google/gemma-3n-e2b-it": 131072,
 	"google/gemma-3n-e4b-it": 131072,
 	"google/codegemma-1.1-7b": 8192,
+	"google/gemma-4-31b-it": 131072,
 	// NVIDIA
 	"nvidia/llama-3.1-nemotron-ultra-253b-v1": 131072,
 	"nvidia/llama-3.1-nemotron-70b-instruct": 131072,
@@ -363,6 +397,11 @@ const CONTEXT_WINDOWS: Record<string, number> = {
 	"nvidia/llama-3.3-nemotron-super-49b-v1.5": 131072,
 	"nvidia/nemotron-4-340b-instruct": 4096,
 	"nvidia/nvidia-nemotron-nano-9b-v2": 131072,
+	"nvidia/nemotron-3-ultra-550b-a55b": 1048576,
+	"nvidia/nemotron-3-super-120b-a12b": 1000000,
+	"nvidia/nemotron-3-nano-omni-30b-a3b-reasoning": 1000000,
+	"nvidia/nemotron-3-nano-30b-a3b": 1000000,
+	"nvidia/nemotron-3.5-lightning-30b-a3b": 1000000,
 	// Thinking Machines
 	[INKLING_MODEL_ID]: 1_048_576,
 	// OpenAI open-source
@@ -372,10 +411,14 @@ const CONTEXT_WINDOWS: Record<string, number> = {
 	"z-ai/glm4.7": 131072,
 	"z-ai/glm5": 131072,
 	"z-ai/glm-5.1": 131072,
+	"z-ai/glm-5.2": 202749,
 	// StepFun
 	"stepfun-ai/step-3.5-flash": 131072,
+	"stepfun-ai/step-3.7-flash": 262144,
 	// ByteDance
 	"bytedance/seed-oss-36b-instruct": 131072,
+	// Poolside
+	"poolside/laguna-xs-2.1": 262144,
 	// IBM Granite
 	"ibm/granite-3.3-8b-instruct": 131072,
 	"ibm/granite-3.0-8b-instruct": 8192,
@@ -438,6 +481,15 @@ const MAX_TOKENS: Record<string, number> = {
 	"mistralai/mistral-large-3-675b-instruct-2512": 16384,
 	"mistralai/devstral-2-123b-instruct-2512": 32768,
 	[INKLING_MODEL_ID]: 16_384,
+	"nvidia/nemotron-3-ultra-550b-a55b": 65536,
+	"nvidia/nemotron-3-super-120b-a12b": 65536,
+	"nvidia/nemotron-3-nano-omni-30b-a3b-reasoning": 65536,
+	"nvidia/nemotron-3-nano-30b-a3b": 65536,
+	"nvidia/nemotron-3.5-lightning-30b-a3b": 65536,
+	"z-ai/glm-5.2": 65536,
+	"stepfun-ai/step-3.7-flash": 65536,
+	"google/gemma-4-31b-it": 8192,
+	"poolside/laguna-xs-2.1": 16384,
 };
 
 // =============================================================================
@@ -445,58 +497,31 @@ const MAX_TOKENS: Record<string, number> = {
 // =============================================================================
 
 const FEATURED_MODELS = [
-	// Flagship / frontier
-	"deepseek-ai/deepseek-v4-flash",
-	"deepseek-ai/deepseek-v4-pro",
-	"deepseek-ai/deepseek-v3.2",
-	"deepseek-ai/deepseek-v3.1",
-	"deepseek-ai/deepseek-v3.1-terminus",
+	// NVIDIA Nemotron 3 (current flagship family, verified live 2026-08-17)
+	"nvidia/nemotron-3-ultra-550b-a55b",
+	"nvidia/nemotron-3-super-120b-a12b",
+	"nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+	"nvidia/nemotron-3.5-lightning-30b-a3b",
+	"nvidia/nemotron-3-nano-30b-a3b",
+	// Frontier open models
 	"moonshotai/kimi-k2.6",
-	"moonshotai/kimi-k2-thinking",
-	"moonshotai/kimi-k2-instruct",
-	"moonshotai/kimi-k2-instruct-0905",
 	MINIMAX_M3_MODEL_ID,
-	"minimaxai/minimax-m2.1",
-	"minimaxai/minimax-m2",
-	"minimaxai/minimax-m2.7",
-	"z-ai/glm5",
-	"z-ai/glm4.7",
+	"z-ai/glm-5.2",
+	"stepfun-ai/step-3.7-flash",
+	INKLING_MODEL_ID,
 	"openai/gpt-oss-120b",
 	"openai/gpt-oss-20b",
-	"stepfun-ai/step-3.5-flash",
-	"bytedance/seed-oss-36b-instruct",
-	INKLING_MODEL_ID,
-	// Qwen
-	"qwen/qwen3-coder-480b-a35b-instruct",
-	"qwen/qwen3-235b-a22b",
-	"qwen/qwen3-next-80b-a3b-instruct",
-	"qwen/qwen3-next-80b-a3b-thinking",
-	"qwen/qwq-32b",
-	"qwen/qwen2.5-coder-32b-instruct",
-	// Meta Llama
-	"meta/llama-4-maverick-17b-128e-instruct",
-	"meta/llama-4-scout-17b-16e-instruct",
+	// Notable others
+	"google/gemma-4-31b-it",
+	"poolside/laguna-xs-2.1",
 	"meta/llama-3.3-70b-instruct",
-	"meta/llama-3.1-405b-instruct",
 	"meta/llama-3.2-90b-vision-instruct",
-	// Mistral
-	"mistralai/mistral-large-3-675b-instruct-2512",
-	"mistralai/mistral-medium-3-instruct",
-	"mistralai/devstral-2-123b-instruct-2512",
-	"mistralai/magistral-small-2506",
 	"mistralai/mistral-nemotron",
-	// NVIDIA
+	"mistralai/mistral-large-2-instruct",
+	// NVIDIA Nemotron (previous generation)
 	"nvidia/llama-3.1-nemotron-ultra-253b-v1",
 	"nvidia/llama-3.3-nemotron-super-49b-v1.5",
-	"nvidia/llama-3.3-nemotron-super-49b-v1",
-	// DeepSeek R1 distilled
-	"deepseek-ai/deepseek-r1-distill-qwen-32b",
-	"deepseek-ai/deepseek-r1-distill-qwen-14b",
-	// Microsoft Phi
-	"microsoft/phi-4-mini-flash-reasoning",
-	"microsoft/phi-4-mini-instruct",
-	// IBM
-	"ibm/granite-3.3-8b-instruct",
+	"nvidia/llama-3.1-nemotron-70b-instruct",
 ];
 
 // =============================================================================
